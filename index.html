@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>星陨战线 · ASTRAL FRONTIER</title>
+<meta name="description" content="一款以星之少女为守卫的 3D Roguelike 塔防游戏。融合共鸣，改写星海战局。">
+<meta name="theme-color" content="#07060e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2307060e'/%3E%3Cpath d='M32 7l5.5 19.5L57 32l-19.5 5.5L32 57l-5.5-19.5L7 32l19.5-5.5z' fill='none' stroke='%23f3d99b' stroke-width='2'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%23f3d99b'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<noscript><div style="position:fixed;inset:0;z-index:999;display:grid;place-items:center;background:#07060e;color:#f3d99b;font:16px 'Microsoft YaHei',sans-serif;letter-spacing:.12em">请启用 JavaScript，星轨才能继续运转。</div></noscript>
+<div id="app">
+  <canvas id="scene" aria-label="星陨战线 3D 战场"></canvas>
+  <div class="fx-vignette"></div>
+  <div class="fx-grain"></div>
+  <div class="fx-letterbox top"></div>
+  <div class="fx-letterbox bottom"></div>
+
+  <!-- 载入 -->
+  <div id="loader" class="loader">
+    <div class="loader-sigil">
+      <svg viewBox="0 0 160 160" aria-hidden="true">
+        <circle cx="80" cy="80" r="66" fill="none" stroke="currentColor" stroke-width=".7" opacity=".25"/>
+        <circle cx="80" cy="80" r="50" fill="none" stroke="currentColor" stroke-width=".7" stroke-dasharray="2 7" opacity=".6"/>
+        <path d="M80 13 L91 65 L143 80 L91 95 L80 147 L69 95 L17 80 L69 65 Z" fill="none" stroke="currentColor" stroke-width="1.1"/>
+        <path d="M80 40 L87 73 L120 80 L87 87 L80 120 L73 87 L40 80 L73 73 Z" fill="currentColor" opacity=".28"/>
+        <circle cx="80" cy="80" r="7" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="loader-title">星陨战线</div>
+    <div class="loader-sub">ASTRAL FRONTIER</div>
+    <div class="loader-bar"><i id="loader-bar"></i></div>
+    <div class="loader-tip" id="loader-tip">正在编织星海…</div>
+  </div>
+
+  <!-- 主菜单 -->
+  <section id="menu" class="screen menu hidden">
+    <header class="menu-top">
+      <div class="brand">
+        <span class="brand-mark">✦</span>
+        <span>ASTRAL FRONTIER</span>
+      </div>
+      <div class="menu-top-actions">
+        <button class="icon-btn" id="menu-audio" title="音效开关" aria-label="音效开关">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path class="wave" d="M16 8c1.6 1.1 2.5 2.4 2.5 4s-.9 2.9-2.5 4M18.8 5.5c2.4 1.8 3.7 3.9 3.7 6.5s-1.3 4.7-3.7 6.5"/></svg>
+        </button>
+        <button class="text-btn" id="btn-meta">星图</button>
+        <button class="text-btn" id="btn-story">剧情序章</button>
+        <button class="text-btn" id="menu-help">作战指南</button>
+        <button class="text-btn" id="menu-settings">设置</button>
+      </div>
+    </header>
+
+    <div class="menu-main">
+      <div class="menu-copy">
+        <div class="chapter-line"><span class="line"></span><span>CHAPTER I</span><span class="line"></span></div>
+        <div class="menu-kicker">云海之上 · 最后一道星门</div>
+        <h1 class="game-title" aria-label="星陨战线">
+          <span class="title-cn">星陨战线</span>
+          <span class="title-en">ASTRAL FRONTIER</span>
+        </h1>
+        <p class="menu-tagline">当群星坠落，少女们仍在守望。</p>
+        <p class="menu-desc">古老星门正在崩塌，深渊军团循光而来。<br>召唤星之少女，以共鸣融合她们的命运，<br>守住云海尽头最后一座星核。</p>
+        <div class="menu-buttons">
+          <button id="btn-start" class="btn btn-primary">
+            <span class="btn-sheen"></span>
+            <span class="btn-icon">✦</span>
+            <span class="btn-label">踏入星海</span>
+            <span class="btn-hint">BEGIN EXPEDITION</span>
+          </button>
+          <button id="btn-guide" class="btn btn-ghost">
+            <span class="btn-label">查看作战指南</span>
+            <span class="btn-arrow">→</span>
+          </button>
+        </div>
+        <div class="menu-options">
+          <div class="menu-opt-row">
+            <span class="menu-opt-label">地图</span>
+            <div id="map-switch" class="menu-switch">
+              <button data-map="cloud" class="active">云海圣所</button>
+              <button data-map="ember">熔火回廊</button>
+              <button data-map="ruins">星海遗迹</button>
+            </div>
+          </div>
+          <div class="menu-opt-row">
+            <span class="menu-opt-label">难度</span>
+            <div id="diff-switch" class="menu-switch">
+              <button data-diff="normal" class="active">普通</button>
+              <button data-diff="hard">困难</button>
+              <button data-diff="nightmare">噩梦</button>
+            </div>
+          </div>
+          <div class="menu-opt-row">
+            <span class="menu-opt-label">模式</span>
+            <div id="mode-switch" class="menu-switch">
+              <button data-mode="standard" class="active">八波远征</button>
+              <button data-mode="endless">无尽回响</button>
+            </div>
+          </div>
+          <button id="btn-continue" class="continue-btn hidden"><span>继续上次远征</span><em id="continue-info">第 1 波</em></button>
+        </div>
+        <div class="menu-meta">
+          <div><b>08</b><span>敌潮波次</span></div>
+          <i></i>
+          <div><b>05</b><span>星之守卫</span></div>
+          <i></i>
+          <div><b>∞</b><span>融合构筑</span></div>
+        </div>
+      </div>
+      <div class="menu-side">
+        <div class="side-index"><span>01</span><i></i><span>08</span></div>
+        <div class="side-label">CLOUDSEA SANCTUM</div>
+        <div class="side-vertical">云 海 圣 所</div>
+        <div class="side-scroll"><span></span>SCROLL</div>
+      </div>
+    </div>
+
+    <footer class="menu-foot">
+      <div class="foot-left"><span class="dot"></span> SINGLE PLAYER · ROGUELIKE TOWER DEFENSE</div>
+      <div class="foot-right">HEADPHONES RECOMMENDED</div>
+    </footer>
+    <div class="menu-caption">“星核不灭，守望不止。”</div>
+  </section>
+
+  <!-- 剧情序章 -->
+  <section id="story-screen" class="screen story-screen hidden">
+    <div class="story-bg"></div>
+    <div class="story-frame">
+      <div class="story-head">
+        <div><span id="story-chapter">PROLOGUE · 序章</span><em id="story-subtitle">THE LAST GATE</em></div>
+        <button id="story-close" class="guide-close" aria-label="关闭剧情">×</button>
+      </div>
+      <div class="story-main">
+        <div class="story-art-wrap">
+          <img id="story-art" alt="">
+          <div id="story-sigil" class="story-sigil">✦</div>
+        </div>
+        <div class="story-content">
+          <div class="story-speaker-row"><span id="story-speaker">旁白</span><em id="story-role">NARRATOR</em></div>
+          <h2 id="story-title">星门将坠</h2>
+          <p id="story-text"></p>
+          <div id="story-progress" class="story-progress"></div>
+        </div>
+      </div>
+      <div class="story-actions">
+        <button id="story-skip" class="story-skip">跳过序章</button>
+        <button id="story-next" class="story-next">继续 <span>→</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 星图档案 -->
+  <section id="meta-screen" class="screen meta-screen hidden">
+    <div class="meta-veil"></div>
+    <div class="meta-shell">
+      <div class="meta-head">
+        <div><div class="eyebrow">STARCHART ARCHIVE</div><h2>星图档案</h2><p>用远征带回的星尘点亮下一段星轨。</p></div>
+        <div class="meta-head-right"><button id="meta-daily" class="meta-daily">今日挑战</button><div class="meta-dust"><span>✦</span><b id="meta-dust">0</b><em>星尘</em></div><button id="meta-close" class="guide-close" aria-label="关闭星图">×</button></div>
+      </div>
+      <div class="meta-cols">
+        <section class="meta-panel">
+          <div class="meta-panel-head"><h3>永久星图</h3><em>STAR MAP</em></div>
+          <div id="meta-upgrades" class="meta-upgrades"></div>
+        </section>
+        <section class="meta-panel">
+          <div class="meta-panel-head"><h3>成就</h3><em id="meta-ach-count">0 / 20</em></div>
+          <div id="meta-achievements" class="meta-achievements"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- 游戏 HUD -->
+  <section id="hud" class="screen hud hidden">
+    <header class="hud-top">
+      <div class="core-status">
+        <div class="core-emblem">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="28" fill="none" stroke="currentColor" stroke-width=".8" opacity=".35"/>
+            <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width=".8" stroke-dasharray="1 4" opacity=".7"/>
+            <path d="M32 10 L39 26 L56 32 L39 38 L32 54 L25 38 L8 32 L25 26 Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+            <circle cx="32" cy="32" r="5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="core-copy">
+          <div class="hud-label">星核结界 <span id="core-frac">20 / 20</span></div>
+          <div class="core-bar"><i id="core-bar"></i><span class="core-bar-glow"></span></div>
+          <div class="core-sub" id="core-sub">结界稳定</div>
+          <button id="btn-repair" class="repair-btn"><span>修复结界 +1</span><em>40</em></button>
+        </div>
+      </div>
+
+      <div class="wave-plaque">
+        <div class="plaque-cap" id="map-cap">CLOUDSEA SANCTUM · 云海圣所</div>
+        <div class="wave-line">
+          <span class="wave-kicker">第</span>
+          <span id="wave-number">1</span>
+          <span class="wave-kicker">波</span>
+          <span class="wave-sep">/</span>
+          <span class="wave-total" id="wave-total">08</span>
+          <span class="wave-name" id="wave-name">迷途之影</span>
+        </div>
+        <div class="wave-progress"><i id="wave-progress"></i></div>
+        <div class="wave-status" id="wave-status">敌潮将在 25 秒后抵达</div>
+      </div>
+
+      <div class="hud-actions">
+        <div class="resource gold">
+          <div class="res-icon">✦</div>
+          <div><span class="res-label">星币</span><b id="gold">360</b></div>
+        </div>
+        <div class="hud-buttons">
+          <button class="icon-btn" id="btn-zoom-out" title="缩小地图" aria-label="缩小地图">−</button>
+          <button class="icon-btn" id="btn-zoom-in" title="放大地图" aria-label="放大地图">＋</button>
+          <button class="icon-btn" id="btn-speed" title="游戏速度">1×</button>
+          <button class="icon-btn" id="btn-help" title="作战指南" aria-label="作战指南">?</button>
+          <button class="icon-btn" id="btn-audio" title="音效开关" aria-label="音效开关">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4Z"/><path class="wave" d="M16 8c1.6 1.1 2.5 2.4 2.5 4s-.9 2.9-2.5 4M18.8 5.5c2.4 1.8 3.7 3.9 3.7 6.5s-1.3 4.7-3.7 6.5"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-pause" title="暂停 / 继续" aria-label="暂停">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="boss-bar" class="boss-bar hidden">
+      <div class="boss-head"><span id="boss-name">深渊歌姬 · 塞拉菲娜</span><em id="boss-phase">PHASE I</em></div>
+      <div class="boss-track"><i id="boss-fill"></i></div>
+      <div id="boss-shield" class="boss-shield hidden"><span>SHIELD</span><div><i id="boss-shield-fill"></i></div></div>
+    </div>
+
+    <aside id="wave-preview" class="wave-preview">
+      <div class="wp-head"><span>NEXT WAVE</span><b id="wp-wave">第 1 波</b><em id="wp-name">迷途之影</em></div>
+      <div id="wp-list" class="wp-list"></div>
+    </aside>
+
+    <div id="announce" class="announce hidden">
+      <div class="announce-ornament"><span></span><i>✦</i><span></span></div>
+      <div class="announce-en" id="announce-en">THE TIDE APPROACHES</div>
+      <div class="announce-title" id="announce-title">第一波</div>
+      <div class="announce-sub" id="announce-sub">迷途之影</div>
+    </div>
+
+    <div id="build-hint" class="build-hint hidden">
+      <div class="hint-icon">✦</div>
+      <div class="hint-copy">
+        <b>部署星之守卫</b>
+        <span>点击下方卡牌，再点击星路之外的草地</span>
+      </div>
+      <div class="hint-key">1 · 2 · 3</div>
+    </div>
+
+    <div id="tutorial" class="tutorial hidden">
+      <div class="tut-star">✧</div>
+      <div class="tut-copy"><b id="tut-title">星核告急</b><span id="tut-text">深渊军团即将抵达。先部署一位守卫。</span></div>
+      <button id="tut-close" class="tut-close" aria-label="关闭提示">×</button>
+    </div>
+
+    <div id="selection-panel" class="selection-panel hidden">
+      <div class="sel-head">
+        <div class="sel-stage-frame" id="sel-stage-frame">
+          <span class="sel-stage-glow"></span>
+          <div class="sel-stage-art"><img id="sel-img" alt=""></div>
+          <span class="sel-stage-badge" id="sel-stage-badge">I</span>
+          <span class="sel-stage-corner tl"></span><span class="sel-stage-corner br"></span>
+        </div>
+        <div class="sel-id">
+          <span class="sel-role" id="sel-role">逐星游侠</span>
+          <h3 id="sel-name">星弦 · 艾莉娅</h3>
+          <div class="sel-stage-name" id="sel-stage-name">I · 白狐灵契</div>
+          <div class="level-row"><span>共鸣阶位</span><div id="sel-level" class="level-pips"></div></div>
+        </div>
+        <button class="sel-close" id="sel-close" aria-label="关闭">×</button>
+      </div>
+      <div class="sel-stage-rail" id="sel-stage-rail"></div>
+      <div class="sel-stats">
+        <div><span>伤害</span><b id="stat-dmg">—</b></div>
+        <div><span>攻速</span><b id="stat-spd">—</b></div>
+        <div><span>射程</span><b id="stat-range">—</b></div>
+        <div><span>击杀</span><b id="stat-kills">0</b></div>
+      </div>
+      <div class="sel-priority">
+        <div class="sel-sub"><span>目标优先级</span><em>攻击逻辑</em></div>
+        <div id="sel-priority" class="priority-row">
+          <button data-mode="first">最前</button><button data-mode="last">最后</button><button data-mode="strong">最强</button><button data-mode="near">最近</button>
+        </div>
+      </div>
+      <div class="sel-mods-wrap">
+        <div class="sel-sub"><span>共鸣铭文</span><em id="mod-count">0 / 8</em></div>
+        <div id="sel-mods" class="sel-mods"><span class="empty-mods">尚未获得铭文，融合可唤醒新的力量</span></div>
+      </div>
+      <div class="sel-upgrade">
+        <div class="up-head"><span>星辉强化</span><em id="up-level">0 / 3</em></div>
+        <button id="btn-upgrade" class="upgrade-btn"><span>强化</span><em id="up-cost">60</em></button>
+        <div class="up-bonus">每级 +10% 伤害 · +8% 攻速</div>
+      </div>
+      <div class="sel-actions">
+        <button id="btn-merge" class="btn btn-fuse"><span>✦</span> 融合共鸣 <em id="merge-hint">选择同阶同伴</em></button>
+        <button id="btn-sell" class="btn btn-small">撤回 <span id="sell-value">+0</span></button>
+      </div>
+    </div>
+
+    <div id="merge-banner" class="merge-banner hidden"><span>选择要融合的同伴</span><em>同类型 · 同阶位</em><button id="merge-cancel">取消</button></div>
+
+    <div class="bottom-ui">
+      <div class="shop-wrap">
+        <div class="shop-heading"><span>星之守卫</span><em>STAR GUARDIANS</em><i></i><b id="shop-tip">选择卡牌后点击星路之外部署</b></div>
+        <div id="shop" class="shop"></div>
+      </div>
+      <div class="wave-control">
+        <button id="btn-call-wave" class="summon-btn">
+          <span class="summon-ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="summon-track"/><circle id="summon-progress" cx="60" cy="60" r="52" class="summon-fill"/></svg><i>✦</i></span>
+          <span class="summon-copy"><b id="call-label">唤醒敌潮</b><em id="call-sub">提前召唤 +15 星币</em></span>
+        </button>
+        <div class="speed-switch">
+          <button data-speed="1" class="active">1×</button>
+          <button data-speed="2">2×</button>
+          <button data-speed="3">3×</button>
+        </div>
+      </div>
+      <div id="skill-dock" class="skill-dock">
+        <button id="btn-skill" class="skill-btn">
+          <span class="skill-ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" class="skill-track"/><circle id="skill-progress" cx="60" cy="60" r="52" class="skill-fill"/></svg><i>✦</i></span>
+          <span class="skill-copy"><b>星蚀 · 时滞</b><em id="skill-state">能量 0 / 100</em></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="toast-layer" class="toast-layer"></div>
+    <div id="float-layer" class="float-layer"></div>
+    <div id="pad-labels" class="pad-labels"></div>
+  </section>
+
+  <!-- 融合三选一 -->
+  <section id="merge-screen" class="screen merge-screen hidden">
+    <div class="merge-veil"></div>
+    <div class="merge-aura"></div>
+    <div class="merge-shell">
+      <div class="merge-top">
+        <div class="merge-rune"><span>✦</span></div>
+        <div class="merge-eyebrow">RESONANCE FUSION</div>
+        <h2>共鸣融合</h2>
+        <p class="merge-desc">两位少女的星轨在此交叠。选择一道铭文，铭刻于<br><b id="merge-tower-name">星弦 · 艾莉娅</b> 的命运之中。</p>
+        <div class="merge-levels"><span id="merge-from-level">阶位 Ⅰ</span><i>✦</i><span class="gold">阶位 Ⅱ</span><em>并继承双方的共鸣铭文</em></div>
+        <div class="merge-stage-line">
+          <div class="merge-stage-art current">
+            <img id="merge-current-img" alt="">
+            <span id="merge-current-label">I · 灵契</span>
+          </div>
+          <div class="merge-stage-arrow"><span>✦</span><i></i></div>
+          <div class="merge-stage-art next">
+            <img id="merge-next-img" alt="">
+            <span id="merge-next-label">II · 少女</span>
+          </div>
+        </div>
+      </div>
+      <div id="merge-cards" class="merge-cards"></div>
+      <div class="merge-foot">
+        <button id="btn-reroll" class="reroll-btn"><span>↻</span> 重掷命运 <em id="reroll-count">2</em></button>
+        <div class="merge-time"><i></i> 时间已凝滞 · 选择后继续战斗</div>
+        <div class="merge-key">点击卡牌确认</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 阶位升华 -->
+  <div id="stageup" class="stageup hidden">
+    <div class="stageup-veil"></div>
+    <div class="stageup-aura"></div>
+    <div class="stageup-inner">
+      <div class="stageup-kicker">RESONANCE ASCENSION</div>
+      <div class="stageup-frame" id="stageup-frame">
+        <img id="stageup-img" alt="">
+        <span class="stageup-badge" id="stageup-stage">II</span>
+        <span class="stageup-halo"></span>
+      </div>
+      <div class="stageup-name" id="stageup-name">逐星少女</div>
+      <div class="stageup-sub" id="stageup-sub">阶位 II · 少女形态</div>
+    </div>
+  </div>
+
+  <!-- 暂停 -->
+  <section id="pause-screen" class="screen pause-screen hidden">
+    <div class="pause-veil"></div>
+    <div class="pause-card">
+      <div class="pause-rune">✦</div>
+      <div class="eyebrow">THE STARS HOLD THEIR BREATH</div>
+      <h2>星辰暂驻</h2>
+      <p>战场已暂停。星核仍在等待你的归来。</p>
+      <button id="btn-resume" class="btn btn-primary"><span class="btn-label">继续战斗</span><span class="btn-hint">RESUME</span></button>
+      <button id="btn-pause-guide" class="btn btn-ghost"><span class="btn-label">作战指南</span></button>
+      <button id="btn-restart" class="text-btn danger">放弃远征，返回星门</button>
+    </div>
+  </section>
+
+  <!-- 结算 -->
+  <section id="end-screen" class="screen end-screen hidden">
+    <div class="end-veil"></div>
+    <div class="end-rays"></div>
+    <div class="end-shell">
+      <div class="end-eyebrow" id="end-eyebrow">THE STARS REMEMBER</div>
+      <h2 id="end-title">星核永驻</h2>
+      <p id="end-sub">云海重归寂静。少女们的名字，被刻进了星图。</p>
+      <div class="end-ornament"><span></span><i>✦</i><span></span></div>
+      <div class="end-stats">
+        <div><b id="end-waves">8</b><span>抵御波次</span></div>
+        <div><b id="end-kills">0</b><span>净化深渊</span></div>
+        <div><b id="end-gold">0</b><span>星币余量</span></div>
+        <div><b id="end-time">00:00</b><span>远征用时</span></div>
+      </div>
+      <div class="end-report">
+        <div id="end-grade" class="end-grade">A</div>
+        <div class="end-report-copy"><b id="end-rating-label">星轨评级</b><span id="end-attribution">—</span></div>
+      </div>
+      <div id="end-damage" class="end-damage"></div>
+      <div id="end-team" class="end-team"></div>
+      <div class="end-actions">
+        <button id="btn-replay" class="btn btn-primary"><span class="btn-icon">↻</span><span class="btn-label">再次远征</span><span class="btn-hint">RETRY EXPEDITION</span></button>
+        <button id="btn-home" class="btn btn-ghost"><span class="btn-label">返回星门</span></button>
+      </div>
+      <div class="end-quote" id="end-quote">“只要星光仍被记得，守望就不会终结。”</div>
+    </div>
+  </section>
+
+  <!-- 指南 -->
+  <section id="guide-screen" class="screen guide-screen hidden">
+    <div class="guide-veil"></div>
+    <div class="guide-shell">
+      <button id="guide-close" class="guide-close">×</button>
+      <div class="guide-head">
+        <div class="eyebrow">EXPEDITION MANUAL</div>
+        <h2>作战指南</h2>
+        <p>云海圣所的最后一道防线，交给你了。</p>
+      </div>
+      <div class="guide-grid">
+        <article><div class="guide-num">01</div><h3>部署守卫</h3><p>点击底部五张星之守卫卡牌，再点击星路之外的草地。绿色预览表示可部署，红色表示星路、星核、地形或守卫间距冲突。</p><div class="guide-tag">按 1 / 2 / 3 / 4 / 5 快速选择</div></article>
+        <article><div class="guide-num">02</div><h3>融合共鸣</h3><p>点击已部署的守卫查看详情。两名<b>同类型、同阶位</b>的守卫可以融合，升阶并继承双方的共鸣铭文。</p><div class="guide-tag">融合时时间凝滞</div></article>
+        <article><div class="guide-num">03</div><h3>三选一构筑</h3><p>每次融合会从命运星图中抽取三枚铭文。稀有度越高，力量越强。每座守卫最多融合三次，构筑独一无二的终局形态。</p><div class="guide-tag">可使用命运重掷</div></article>
+        <article><div class="guide-num">04</div><h3>守住星核</h3><p>敌人沿星路抵达尽头会损伤星核结界。提前召唤敌潮可获得额外星币。抵御全部八波，击败深渊歌姬。</p><div class="guide-tag">星核结界归零则远征失败</div></article>
+        <article><div class="guide-num">05</div><h3>星辉强化 · 目标优先级</h3><p>点击已部署守卫，可用星币进行 <b>3 级星辉强化</b>。面板内还能切换<b>最前 / 最后 / 最强 / 最近</b>四种目标优先级，让同一座塔适配不同波次。</p><div class="guide-tag">金币不再只用于造塔</div></article>
+        <article><div class="guide-num">06</div><h3>星蚀 · 时滞</h3><p>击杀敌人积攒能量，满 100 后按 <b>Q</b> 或点击右下角按钮，全场敌人减速 <b>70%</b>，持续 3.5 秒。布防期还能花 40 星币修复 1 点结界，每局最多 3 次。</p><div class="guide-tag">左侧面板会预告下一波构成</div></article>
+      </div>
+      <div class="guide-keys">
+        <span><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 选择守卫</span>
+        <span><kbd>Q</kbd> 星蚀时滞</span>
+        <span><kbd>Space</kbd> 提前召唤 / 暂停</span>
+        <span><kbd>Esc</kbd> 取消选择</span>
+        <span><kbd>M</kbd> 静音</span>
+      </div>
+      <button id="guide-ok" class="btn btn-primary"><span class="btn-label">明白了</span><span class="btn-hint">CLOSE</span></button>
+    </div>
+  </section>
+
+  <!-- 设置 -->
+  <section id="settings-screen" class="screen settings-screen hidden">
+    <div class="settings-veil"></div>
+    <div class="settings-shell">
+      <button id="settings-close" class="guide-close">×</button>
+      <div class="eyebrow">SYSTEM CONFIGURATION</div>
+      <h2>星轨设置</h2>
+      <p>调整音量、画质与动态表现。</p>
+      <div class="settings-grid">
+        <label class="setting-row">
+          <span>主音量</span>
+          <input id="set-volume" type="range" min="0" max="100" step="1" value="72">
+          <em id="set-volume-val">72%</em>
+        </label>
+        <div class="setting-row">
+          <span>画质</span>
+          <div id="set-quality" class="setting-switch">
+            <button data-q="high" class="active">高</button>
+            <button data-q="medium">中</button>
+            <button data-q="low">低</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span>界面字号</span>
+          <div id="set-font" class="setting-switch">
+            <button data-f="standard" class="active">标准</button>
+            <button data-f="large">大</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span>动态效果</span>
+          <div id="set-motion" class="setting-switch">
+            <button data-m="full" class="active">完整</button>
+            <button data-m="reduced">减弱</button>
+          </div>
+        </div>
+      </div>
+      <button id="settings-ok" class="btn btn-primary"><span class="btn-label">保存设置</span><span class="btn-hint">APPLY</span></button>
+    </div>
+  </section>
+
+  <div id="transition" class="transition"></div>
+</div>
+
+<script src="js/three.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/world.js"></script>
+<script src="js/models_data.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/yokai.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/story.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
+
